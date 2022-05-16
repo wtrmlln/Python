@@ -52,7 +52,6 @@ def initialize_chrome():
         sys.exit()
     return driver
 
-
 def set_chrome_options(args_list, chrome_options):
     for arg in args_list:
         chrome_options.add_argument(arg)
@@ -64,8 +63,3 @@ def load_cookies():
     except:
         cookies = None
         return cookies
-
-
-
-
-    
