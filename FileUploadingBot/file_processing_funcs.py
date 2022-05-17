@@ -1,4 +1,11 @@
-from all_imports import keyring, EC, By, WebDriverWait, TimeoutException, pickle, os, re
+import keyring
+import pickle
+import os
+import re
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 
 def authorization(site_name, driver):
     if driver.title == "Система управления сайтами NetCat" or site_name == 'ПМК':

@@ -1,6 +1,7 @@
-﻿import pip
+﻿import os, time, multiprocessing, logging
+from multiprocessing.dummy import Pool as ThreadPool
 from file_preparation_funcs import choose_files, get_sitenames
-from file_loading_funcs import price_loading, stocks_loading
+from file_loading_funcs import price_loading, stocks_loading 
 
 def main():
     start = time.time()
@@ -32,11 +33,5 @@ def main():
         print('Успешно выполнено за:', round(timeend, 2)) 
     time.sleep(15)
     
-if __name__ == '__main__':
-    
-    try:
-        from all_imports import *
-    except ImportError:
-        pip.main(['install', '-r', 'requirements.txt'])
-        
+if __name__ == '__main__': 
     main()

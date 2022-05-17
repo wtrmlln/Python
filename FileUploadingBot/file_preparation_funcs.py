@@ -1,4 +1,14 @@
-from all_imports import tkinter, askopenfilenames, os, sys, time, pickle, webdriver, Service, ChromeDriverManager, CHROMEOPTIONS_ARGS, WebDriverException 
+import tkinter
+import os
+import sys
+import time
+import pickle
+from tkinter.filedialog import askopenfilenames
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import WebDriverException
+from settings import CHROMEOPTIONS_ARGS
 
 def choose_files():
     tkinter_root = tkinter.Tk()
