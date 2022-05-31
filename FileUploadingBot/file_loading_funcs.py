@@ -10,8 +10,8 @@ def price_loading(filename):
         list_name_link = ['ПМК', 'https://prommashkomplekt.ru/netcat/add.php?catalogue=1&sub=3&cc=10004']
     elif 'DDI' in filename:
         list_name_link = ['DDI', 'https://d-d-i.ru/netcat/add.php?catalogue=1&sub=3&cc=10004']
-    elif 'DDI' in filename:
-        list_name_link = [' Н ', 'https://kompkresla.ru/netcat/?catalogue=2&sub=106&cc=9346']
+    elif ' Н ' in filename:
+        list_name_link = ['Компкресла', 'https://kompkresla.ru/netcat/?catalogue=2&sub=106&cc=9346']
     elif 'Кабинетоф' in filename:
         list_name_link = ['Кабинетоф', 'http://kabinetof.ru/netcat/?catalogue=1&sub=81&cc=4489&curPos=0']
     else:
