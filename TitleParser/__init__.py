@@ -8,7 +8,7 @@ from datetime import datetime
 
 def main():
 
-    urls_to_parse = pd.read_csv(input('Введите путь до файла csv формата, содержащего URL ссылки для парсинга Title: ')).tolist()[:30]
+    urls_to_parse = pd.read_csv(input('Введите путь до файла csv формата, содержащего URL ссылки для парсинга Title: '), squeeze=True, error_bad_lines=False, encoding='utf-8').tolist()
     path_to_save = path_to_upload = 'C:\\Users\\' + os.getlogin() + '\\Desktop\\Результаты Title парсинга\\'
     titles_list = []
     
@@ -28,7 +28,7 @@ def main():
     pool = ThreadPool(1024)
 
     titles_list = list(tqdm.tqdm(pool.imap_unordered(parse_title, urls_to_parse), total=len(urls_to_parse)))
-    titles_df = pd.DataFrame({'col':titles_list})
+    titles_df = pd.DataFrame({'title':titles_list})
     
     try:
         os.makedirs(path_to_upload)
