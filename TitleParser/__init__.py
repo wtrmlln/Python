@@ -27,7 +27,7 @@ def main():
 
     pool = ThreadPool(1024)
 
-    titles_list = list(tqdm.tqdm(pool.imap_unordered(parse_title, urls_to_parse), total=len(urls_to_parse)))
+    titles_list = list(tqdm.tqdm(p  ool.imap_unordered(parse_title, urls_to_parse), total=len(urls_to_parse)))
     titles_df = pd.DataFrame({'title':titles_list})
     
     try:
