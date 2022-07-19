@@ -1,5 +1,8 @@
 import pickle
 import pandas as pd
+import requests
+
+from io import StringIO
 
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
@@ -116,9 +119,28 @@ def testing(site):
 
     google_indexing = driver.find_element(By.ID, 'set_pages_in_google').text
 
-    google_speed_page_desktop = driver.find_element(By.ID, 'set_google_speed_desktop').text
+    for i in range(0, 2):
 
-    google_speed_page_mobile = driver.find_element(By.ID, 'set_google_speed_mobile').text
+        if i == 0:
+            strategy = 'desktop'
+        else:
+            strategy = 'mobile'
+
+        api_key = 'AIzaSyBYu67Vx4tXAB6IdmJPj3uAhrYGO28XwCE'
+        url = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed'
+
+        params_dict = {'url': site, 'key': api_key, 'strategy': strategy}
+        try:
+            response = requests.get(url, params=params_dict)
+            df = pd.read_json(StringIO(response.text))
+            if i == 0:
+                google_speed_page_desktop = df['lighthouseResult']['categories']['performance']['score']
+            else:
+                google_speed_page_mobile = driver.find_element(By.ID, 'set_google_speed_mobile').text
+        except:
+            google_speed_page_desktop = None
+            google_speed_page_mobile = None
+
 
     megaindex_trust_rank = driver.find_element(By.ID, 'set_trust_rank').text
     megaindex_domain_rank = driver.find_element(By.ID, 'set_domain_rank').text
