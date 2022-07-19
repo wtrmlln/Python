@@ -1,9 +1,11 @@
 import pickle
 import pandas as pd
 import requests
+import tqdm
+from datetime import datetime
 
 from io import StringIO
-
+from multiprocessing.dummy import Pool as ThreadPool
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
@@ -19,10 +21,9 @@ df = pd.DataFrame(columns=['Сайт', "Тайтл", "Длина тайтла", 
                            "Ключевые слова", "Заголовки", "Технические ошибки", "Возраст сайта", 
                            "Размер страницы", "Скорость загрузки", "IP адрес", "Стоимость сайта", 
                            "Проиндексировано в Яндекс", "Яндекс ИКС", "Фильтр за вирусы в Яндекс", 
-                           "Проиндексировано в Гугл", "Скорость загрузки dekstop Гугл", "Скорость загрузки mobile Гугл", 
-                           "Megaindex Trust Rank", "Megaaindex Domain Rank", "Уникальные ссылки",
-                           "Домены", "IP адреса", "Подсети", "Mobile Friendly Test", "Тег viewport",
-                           "Flash элементы", "Java апплеты", "Silverlight плагины", "Проверка на AMP", 
+                           "Проиндексировано в Гугл",  "Megaindex Trust Rank", "Megaaindex Domain Rank", 
+                           "Уникальные ссылки", "Домены", "IP адреса", "Подсети", "Mobile Friendly Test", 
+                           "Тег viewport", "Flash элементы", "Java апплеты", "Silverlight плагины", "Проверка на AMP", 
                            "Кодировка", "Robots.txt", "Sitemap.xml", "iframe на страницы", "Ошибки валидности HTML", 
                            "Ошибки валидности CSS", "Youtube", "VK", "Facebook", "Instagram", "Twitter", "Telegram"]) 
 
@@ -52,7 +53,7 @@ def bypass_popup_window(driver):
 
 def testing(site):
     
-    timeout = 20
+    timeout = 15
     
     # Заходим на сайт
     driver.get('https://be1.ru/')
@@ -70,22 +71,26 @@ def testing(site):
    
     recaptcha_timeout = 500
     try:
-        WebDriverWait(driver, recaptcha_timeout).until_not(EC.element_to_be_clickable((By.CLASS_NAME, "recaptcha-checkbox-border")))
+        captcha_element = EC.presence_of_element_located((By.ID, 'recaptcha'))
+        WebDriverWait(driver, timeout=2).until(captcha_element)
     except:
+        captcha_element = EC.presence_of_element_located((By.ID, 'recaptcha'))
+        WebDriverWait(driver, timeout=recaptcha_timeout).until_not(captcha_element)
+    finally:
         pass
        
     try:
         # Вытягиваем всю страницу HTML с отчетом
         bypass_popup_window(driver)
         element_present = EC.element_to_be_clickable((By.XPATH, '//div[@class="col-md-11" and @id="report"]'))
-        WebDriverWait(driver, timeout).until(element_present)
+        WebDriverWait(driver, timeout=timeout).until(element_present)
         
         html_page = driver.find_element(By.XPATH, '//div[@class="col-md-11" and @id="report"]')
         text_list = html_page.text.split('\n')
     except (NoSuchElementException, TimeoutException):
         bypass_popup_window(driver)
         element_present = EC.element_to_be_clickable((By.ID, 'report'))
-        WebDriverWait(driver, timeout).until(element_present)
+        WebDriverWait(driver, timeout=timeout).until(element_present)
         html_page = driver.find_element(By.ID, 'report')
         text_list = html_page.text.split('\n')
 
@@ -118,29 +123,6 @@ def testing(site):
     virus_filter = driver.find_element(By.ID, 'set_virus').text
 
     google_indexing = driver.find_element(By.ID, 'set_pages_in_google').text
-
-    for i in range(0, 2):
-
-        if i == 0:
-            strategy = 'desktop'
-        else:
-            strategy = 'mobile'
-
-        api_key = 'AIzaSyBYu67Vx4tXAB6IdmJPj3uAhrYGO28XwCE'
-        url = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed'
-
-        params_dict = {'url': site, 'key': api_key, 'strategy': strategy}
-        try:
-            response = requests.get(url, params=params_dict)
-            df = pd.read_json(StringIO(response.text))
-            if i == 0:
-                google_speed_page_desktop = df['lighthouseResult']['categories']['performance']['score']
-            else:
-                google_speed_page_mobile = driver.find_element(By.ID, 'set_google_speed_mobile').text
-        except:
-            google_speed_page_desktop = None
-            google_speed_page_mobile = None
-
 
     megaindex_trust_rank = driver.find_element(By.ID, 'set_trust_rank').text
     megaindex_domain_rank = driver.find_element(By.ID, 'set_domain_rank').text
@@ -235,10 +217,10 @@ def testing(site):
                
     row_list = [site, title, title_len, description, description_len, keywords, h_titles_list, 
                 tech_errors, site_age, page_size, page_speed, ip_address, site_cost, yandex_indexing, 
-                yandex_iks, virus_filter, google_indexing, google_speed_page_desktop, google_speed_page_mobile, 
-                megaindex_trust_rank, megaindex_domain_rank, unique_links, domains, ip_addresses_list, subnetworks,
-                mobile_friendly_test, tag_viewport, flash_elements, java_applets, silverlight_plugins, amp_check, 
-                page_encoding, robots_file, sitemap_file, iframe_count, html_errors, css_errors, youtube_link, 
+                yandex_iks, virus_filter, google_indexing, megaindex_trust_rank, megaindex_domain_rank, 
+                unique_links, domains, ip_addresses_list, subnetworks,mobile_friendly_test, tag_viewport, 
+                flash_elements, java_applets, silverlight_plugins, amp_check, page_encoding, robots_file, 
+                sitemap_file, iframe_count, html_errors, css_errors, youtube_link, 
                 vk_link, facebook_link, instagram_link, twitter_link, telegram_link]
     
     pickle.dump(driver.get_cookies(), open("cookies.pkl","wb"))
@@ -246,23 +228,37 @@ def testing(site):
     
     return row_list
 
+def parse_google_speed(site_list):
+    site = site_list[0]
+    strategy = site_list[1]
+    
+    api_key = 'AIzaSyBYu67Vx4tXAB6IdmJPj3uAhrYGO28XwCE'
+    url = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed'
 
-# sites_to_parse = ['https://toruda.ru/', 'https://det-ploshadka.ru/', 'https://hoff.ru/', 'https://zaborkin.ru/', 
-#                   'https://www.livemaster.ru/','https://www.livemaster.ru/', 'https://besedkis.ru/', 'https://hozotdel.ru/', 
-#                   'https://www.detmir.ru/', 'https://www.profpokritie.com/']
+    params_dict = {'url': site, 'key': api_key, 'strategy': strategy}
+    
+    try:
+        response = requests.get(url, params=params_dict)
+        df = pd.read_json(StringIO(response.text))
+        google_speed_page = df['lighthouseResult']['categories']['performance']['score']
+    except:
+        google_speed_page = None
+    return [site, strategy, google_speed_page]
+
 while True:
     try:
         file_path = str(input('Введите полный путь до txt файла, содержащего ссылки на сайты: '))
         with open(file_path) as f:
             sites_to_parse = f.read().splitlines()
+            for i in range(len(sites_to_parse)):
+                sites_to_parse[i] = sites_to_parse[i].replace(' ', '')
+                sites_to_parse[i] = sites_to_parse[i].replace('\xa0', '')
+            sites_to_parse = [site.strip() for site in sites_to_parse if site.strip()]
             break
     except:
         print('Неверно указан путь до файла.')
         pass
 
-for i in range(len(sites_to_parse)):
-    sites_to_parse[i] = sites_to_parse[i].replace(' ', '')
-    sites_to_parse[i] = sites_to_parse[i].replace('\xa0', '')
 
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--start-maximized")
@@ -278,9 +274,36 @@ driver.refresh()
 
 for i in range(len(sites_to_parse)):
     df.loc[i] = testing(sites_to_parse[i])
-
-df.to_excel('test_result be1pars 11.07.xlsx')
-
 driver.close()
 
-x = 0
+
+pool = ThreadPool(len(sites_to_parse))
+
+sites_for_pageinsights = []
+for site in sites_to_parse:
+    for i in range(0, 2):
+        if i == 0:
+            strategy = 'desktop'
+        else:
+            strategy = 'mobile'
+        sites_for_pageinsights.append([site, strategy])
+speed_results_list = list(tqdm.tqdm(pool.imap_unordered(parse_google_speed, sites_for_pageinsights), total=len(sites_for_pageinsights)))
+
+desktop_dict = {}
+mobile_dict = {}
+for i in range(len(speed_results_list)):
+    if speed_results_list[i][1] == 'desktop':
+        desktop_dict[speed_results_list[i][0]] = speed_results_list[i][2]
+    elif speed_results_list[i][1] == 'mobile':
+        mobile_dict[speed_results_list[i][0]] = speed_results_list[i][2]
+df['Скорость загрузки desktop'] = df['Сайт'].map(desktop_dict)
+df['Скорость загрузки mobile'] = df['Сайт'].map(mobile_dict)
+    
+i = 0
+while True:
+    try:
+        df.to_excel('be1 parsed file ' + datetime.today().strftime('%Y-%m-%d') + ' - ' + str(i) + '.xlsx')
+        break
+    except:
+        i += 1
+        pass
