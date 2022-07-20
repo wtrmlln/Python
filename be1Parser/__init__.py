@@ -18,7 +18,7 @@ from selenium.common.exceptions import WebDriverException
 
 global df
 df = pd.DataFrame(columns=['Сайт', "Тайтл", "Длина тайтла", "Декскрипшен", "Длина дескрипшена", 
-                           "Ключевые слова", "Заголовки", "Технические ошибки", "Возраст сайта", 
+                           "Ключевые слова", "Заголовки", "Технические ошибки", "Возраст сайта (WHOIS)", 
                            "Размер страницы", "Скорость загрузки", "IP адрес", "Стоимость сайта", 
                            "Проиндексировано в Яндекс", "Яндекс ИКС", "Фильтр за вирусы в Яндекс", 
                            "Проиндексировано в Гугл",  "Megaindex Trust Rank", "Megaaindex Domain Rank", 
@@ -106,7 +106,7 @@ def testing(site):
 
     tech_errors = text_list[15]
 
-    site_age = driver.find_element(By.ID, 'set_vozrast').text
+    site_age_whois = driver.find_element(By.ID, 'set_vozrast').text
 
     page_size = driver.find_element(By.ID, 'set_page_size').text
 
@@ -211,9 +211,13 @@ def testing(site):
             telegram_link = driver.find_element(By.LINK_TEXT, 'telegram.com').get_attribute('href')
     except NoSuchElementException:
         telegram_link = 'Отсутствует'
-               
+
+    driver.get('https://be1.ru/vozrast-stranicy/')
+    text_form = driver.find_element(By.ID, 'tool-form')
+    text_form.send_keys(site)
+
     row_list = [site, title, title_len, description, description_len, keywords, h_titles_list, 
-                tech_errors, site_age, page_size, page_speed, ip_address, site_cost, yandex_indexing, 
+                tech_errors, site_age_whois, page_size, page_speed, ip_address, site_cost, yandex_indexing, 
                 yandex_iks, virus_filter, google_indexing, megaindex_trust_rank, megaindex_domain_rank, 
                 unique_links, domains, ip_addresses_list, subnetworks,mobile_friendly_test, tag_viewport, 
                 flash_elements, java_applets, silverlight_plugins, amp_check, page_encoding, robots_file, 
