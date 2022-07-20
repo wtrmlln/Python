@@ -179,21 +179,18 @@ def testing(site):
     try:
         if driver.find_element(By.XPATH, '//*[@class="fa fa-fw fa-youtube"]').get_attribute('href') != None or driver.find_element(By.LINK_TEXT, 'youtube.com').get_attribute('href') != None:
             youtube_link = driver.find_element(By.LINK_TEXT, 'youtube.com').get_attribute('href')
-        
     except NoSuchElementException:
         youtube_link = 'Отсутствует'
          
     try:
         if driver.find_element(By.XPATH, '//*[@class="fa fa-fw fa-vk"]').get_attribute('href') != None or driver.find_element(By.LINK_TEXT, 'vk.com').get_attribute('href') != None:
-            vk_link = driver.find_element(By.LINK_TEXT, 'vk.com').get_attribute('href')
-        
+            vk_link = driver.find_element(By.LINK_TEXT, 'vk.com').get_attribute('href')  
     except NoSuchElementException: 
         vk_link = 'Отсутствует'   
     
     try:
         if driver.find_element(By.XPATH, '//*[@class="fa fa-fw fa-facebook"]').get_attribute('href') != None or driver.find_element(By.LINK_TEXT, 'facebook.com').get_attribute('href') != None:
-            facebook_link = driver.find_element(By.LINK_TEXT, 'facebook.com').get_attribute('href')
-        
+            facebook_link = driver.find_element(By.LINK_TEXT, 'facebook.com').get_attribute('href') 
     except NoSuchElementException:
         facebook_link = 'Отсутствует' 
 
@@ -224,8 +221,7 @@ def testing(site):
                 vk_link, facebook_link, instagram_link, twitter_link, telegram_link]
     
     pickle.dump(driver.get_cookies(), open("cookies.pkl","wb"))
-    
-    
+
     return row_list
 
 def parse_google_speed(site_list):
@@ -259,7 +255,6 @@ while True:
         print('Неверно указан путь до файла.')
         pass
 
-
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--start-maximized")
 
@@ -276,7 +271,6 @@ for i in range(len(sites_to_parse)):
     df.loc[i] = testing(sites_to_parse[i])
 driver.close()
 
-
 pool = ThreadPool(len(sites_to_parse))
 
 sites_for_pageinsights = []
@@ -287,7 +281,7 @@ for site in sites_to_parse:
         else:
             strategy = 'mobile'
         sites_for_pageinsights.append([site, strategy])
-speed_results_list = list(tqdm.tqdm(pool.imap_unordered(parse_google_speed, sites_for_pageinsights), total=len(sites_for_pageinsights)))
+speed_results_list = list(tqdm.tqdm(pool.imap_unordered(parse_google_speed, sites_for_pageinsights), total=len(sites_for_pageinsights), desc='Парсинг PageSpeed Insights Google'))
 
 desktop_dict = {}
 mobile_dict = {}
