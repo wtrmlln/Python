@@ -1,3 +1,5 @@
+from credentials import arsenkin_login, arsenkin_password
+
 import pickle
 import pandas as pd
 import requests
@@ -212,10 +214,6 @@ def testing(site):
     except NoSuchElementException:
         telegram_link = 'Отсутствует'
 
-    driver.get('https://be1.ru/vozrast-stranicy/')
-    text_form = driver.find_element(By.ID, 'tool-form')
-    text_form.send_keys(site)
-
     row_list = [site, title, title_len, description, description_len, keywords, h_titles_list, 
                 tech_errors, site_age_whois, page_size, page_speed, ip_address, site_cost, yandex_indexing, 
                 yandex_iks, virus_filter, google_indexing, megaindex_trust_rank, megaindex_domain_rank, 
@@ -227,6 +225,54 @@ def testing(site):
     pickle.dump(driver.get_cookies(), open("cookies.pkl","wb"))
 
     return row_list
+
+def parse_site_age_be1(sites_to_parse):
+
+    driver.get('https://be1.ru/vozrast-stranicy/')
+    
+    text_form = driver.find_element(By.XPATH, '//textarea[@name="links" and @class="form-control"]')
+    text_form.send_keys('\n'.join(sites_to_parse))
+    
+    check_button = driver.find_element(By.ID, 'tool-form-btn')
+    check_button.click()
+    
+    table_present = EC.presence_of_element_located((By.XPATH, '//table[@class="table table-fixed table-bordered table-headed sortable"]'))
+    WebDriverWait(driver, timeout=5).until(table_present)
+    
+    sites_age_table_be1 = pd.read_html(driver.find_element(By.XPATH, '//table[@class="table table-fixed table-bordered table-headed sortable"]').get_attribute('outerHTML'))[0]
+    
+    sites_age_table_be1 = sites_age_table_be1.rename({'URL': 'Сайт', 'Возраст': 'Возраст be1'}, axis=1)
+    
+    return sites_age_table_be1
+
+def parse_site_age_arsenkin(sites_to_parse):
+    
+    driver.get('https://arsenkin.ru/tools/login/')
+    
+    email = driver.find_element(By.NAME, 'email')
+    email.send_keys(arsenkin_login) 
+    password = driver.find_element(By.NAME, 'password')
+    password.send_keys(arsenkin_password)
+
+    button_in = driver.find_element(By.XPATH, '//input[@type="submit" and @value="Войти"]')
+    button_in.click()
+
+    driver.get('https://arsenkin.ru/tools/whois/')
+    
+    form_control = driver.find_element(By.XPATH, '//textarea[@name="urls" and @class="form-control"]')
+    form_control.send_keys('\n'.join(sites_to_parse[:500]))
+
+    show_button = driver.find_element(By.ID, 'ok')
+    WebDriverWait(driver, timeout=5).until(EC.element_to_be_clickable((By.ID, 'ok')))
+    show_button.click()
+    WebDriverWait(driver, timeout=100).until(EC.presence_of_element_located((By.XPATH, '//table[@class="table table-striped"]')))
+    sites_age_table_arsenkin = pd.read_html(driver.find_element(By.XPATH, '//table[@class="table table-striped"]').get_attribute('outerHTML'))[0]
+    sites_age_table_arsenkin['Домен'] = sites_to_parse
+    sites_age_table_arsenkin['Возраст'] = (pd.Timestamp('today') - pd.to_datetime(sites_age_table_arsenkin['Дата регистрации'])).dt.days
+    sites_age_table_arsenkin = sites_age_table_arsenkin[['Домен', 'Возраст']]
+    sites_age_table_arsenkin = sites_age_table_arsenkin.rename({'Домен': 'Сайт', 'Возраст': 'Возраст ARSENKIN'}, axis=1)
+    return sites_age_table_arsenkin
+    
 
 def parse_google_speed(site_list):
     site = site_list[0]
@@ -247,7 +293,8 @@ def parse_google_speed(site_list):
 
 while True:
     try:
-        file_path = str(input('Введите полный путь до txt файла, содержащего ссылки на сайты: '))
+        #file_path = str(input('Введите полный путь до txt файла, содержащего ссылки на сайты: '))
+        file_path = 'C:\parse.txt'
         with open(file_path) as f:
             sites_to_parse = f.read().splitlines()
             for i in range(len(sites_to_parse)):
@@ -260,12 +307,17 @@ while True:
         pass
 
 chrome_options = webdriver.ChromeOptions()
+chrome_options.add_argument('--log-level=3')
 chrome_options.add_argument("--start-maximized")
 
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), 
                         options=chrome_options, 
                         service_log_path='NULL') 
 cookies = load_cookies()
+
+sites_age_table_be1 = parse_site_age_be1(sites_to_parse)
+sites_age_table_arsenkin = parse_site_age_arsenkin(sites_to_parse)
+
 driver.get('https://be1.ru/')
 if cookies != None:
     add_cookies(cookies, driver)
@@ -294,8 +346,12 @@ for i in range(len(speed_results_list)):
         desktop_dict[speed_results_list[i][0]] = speed_results_list[i][2]
     elif speed_results_list[i][1] == 'mobile':
         mobile_dict[speed_results_list[i][0]] = speed_results_list[i][2]
+        
 df['Скорость загрузки desktop'] = df['Сайт'].map(desktop_dict)
 df['Скорость загрузки mobile'] = df['Сайт'].map(mobile_dict)
+
+df = pd.merge(df, sites_age_table_be1[['Сайт', 'Возраст страницы be1']], on='Сайт')
+df = pd.merge(df, sites_age_table_arsenkin[['Сайт', 'Возраст страницы ARSENKIN']], on='Сайт')
     
 i = 0
 while True:
