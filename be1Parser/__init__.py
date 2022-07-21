@@ -1,4 +1,4 @@
-from credentials import arsenkin_login, arsenkin_password
+from credentials import arsenkin_login, arsenkin_password, google_api_key
 
 import pickle
 import pandas as pd
@@ -278,10 +278,9 @@ def parse_google_speed(site_list):
     site = site_list[0]
     strategy = site_list[1]
     
-    api_key = 'AIzaSyBYu67Vx4tXAB6IdmJPj3uAhrYGO28XwCE'
     url = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed'
 
-    params_dict = {'url': site, 'key': api_key, 'strategy': strategy}
+    params_dict = {'url': site, 'key': google_api_key, 'strategy': strategy}
     
     try:
         response = requests.get(url, params=params_dict)
