@@ -24,10 +24,10 @@ def main():
         timeend = time.time() - start
         print('Успешно выполнено за:', round(timeend, 2))
     elif len(filenames) > 0:
-        if len(filenames) < multiprocessing.cpu_count():
+        if len(filenames) < multiprocessing.cpu_count() // 2:
             pool = ThreadPool(len(filenames))
         else:
-            pool = ThreadPool(multiprocessing.cpu_count())
+            pool = ThreadPool(multiprocessing.cpu_count() // 2)
         pool.map(price_loading, filenames)
         timeend = time.time() - start
         print('Успешно выполнено за:', round(timeend, 2)) 

@@ -69,6 +69,7 @@ def load_file(filename, site_name, driver):
                 result = result.text
             except TimeoutException:
                 print(site_name.ljust(15) + '/// ' + filename.ljust(15) + ' /// '.ljust(3) + 'Timed out') 
+                result = None
     else:
         if site_name == 'Компкресла':
             priceload_button = driver.find_element(By.LINK_TEXT, 'Отправить')
